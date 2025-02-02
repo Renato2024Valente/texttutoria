@@ -342,26 +342,19 @@
                 document.getElementById('carimboGestor').disabled = true;
             }
         });
-// Função para obter o nome do local a partir da latitude e longitude
-function getLocationName(latitude, longitude) {
-    const apiKey = 'AIzaSyBFls8p26G8Tz05ZGpjKI04ztK6HQDsy2g';  // Substitua pela sua chave da API do Google
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`;
-
+// Função para obter a geolocalização
+function getGeolocation() {
     return new Promise((resolve, reject) => {
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'OK') {
-                    const address = data.results[0].formatted_address;  // Retorna o nome do local
-                    resolve(address);
-                } else {
-                    reject('Não foi possível obter o nome do local.');
-                }
-            })
-            .catch(error => reject(error));
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                position => resolve(position),
+                error => reject(error)
+            );
+        } else {
+            reject(new Error("Geolocalização não suportada no seu navegador."));
+        }
     });
 }
-
 
        // Função para salvar uma tutoria
 async function saveTutoria() {
@@ -369,18 +362,14 @@ async function saveTutoria() {
     const serie = document.getElementById('serie').value;
     const nomeCompleto = `${nomeAluno} (${serie})`;
 
-    let geolocationData = { latitude: '', longitude: '', locationName: '' };
+    let geolocationData = { latitude: '', longitude: '' };
 
     try {
-        // Obtém as coordenadas de latitude e longitude
         const position = await getGeolocation();
         geolocationData.latitude = position.coords.latitude;
         geolocationData.longitude = position.coords.longitude;
-
-        // Obtém o nome do local usando a geocodificação reversa
-        geolocationData.locationName = await getLocationName(geolocationData.latitude, geolocationData.longitude);
     } catch (error) {
-        console.error("Erro ao obter geolocalização ou nome do local:", error);
+        console.error("Erro ao obter geolocalização:", error);
     }
 
     const tutoriaData = {
@@ -400,8 +389,7 @@ async function saveTutoria() {
         dataHora: document.getElementById('dataHora').innerText,
         assinaturaAluno: canvasAluno.toDataURL(),
         latitude: geolocationData.latitude,
-        longitude: geolocationData.longitude,
-        locationName: geolocationData.locationName // Nome do local
+        longitude: geolocationData.longitude
     };
 
     let tutorias = JSON.parse(localStorage.getItem('tutorias')) || [];
@@ -411,7 +399,6 @@ async function saveTutoria() {
     renderTutoriaList();
     clearForm();
 }
-
 
 
         // Função para limpar o formulário
